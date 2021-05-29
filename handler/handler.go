@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"html/template"
@@ -186,6 +187,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request, p httprou
 		fname := part.FileName()
 		s.logger.Infof("multipart/form-data Content-Type: %s, Filename: %s", contentType, fname)
 
+		// bufferedWriter := bufio.NewWriter(w)
 		buf := make([]byte, 4096) // make a buffer to keep chunks that are read
 		fileSent, err := readerToFile(part, dirPath, fname, s.keepOriginalUploadFileName, buf)
 		if err != nil {
@@ -206,18 +208,14 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request, p httprou
 
 // helpers
 
-func getContentType(path string, buf []byte) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	ctype := mime.TypeByExtension(filepath.Ext(path))
+func getContentType(f *os.File) (string, error) {
+	ctype := mime.TypeByExtension(filepath.Ext(f.Name()))
 	if ctype == "" {
-		n, _ := io.ReadFull(f, buf) // read a chunk to decide between utf-8 text and binary
+		const sniffLen = 512
+		var buf [sniffLen]byte
+		n, _ := io.ReadFull(f, buf[:]) // read a chunk to decide between utf-8 text and binary
 		ctype = http.DetectContentType(buf[:n])
-		_, err = f.Seek(0, io.SeekStart) // rewind to output whole file
+		_, err := f.Seek(0, io.SeekStart) // rewind to output whole file
 		if err != nil {
 			// seeker can't seek
 			return "", err
@@ -250,9 +248,14 @@ func sendFileToClient(w http.ResponseWriter, filepath string) error {
 		return ErrFileIsNotRegular
 	}
 
-	// FIXME comparar desempenho bufio
-	buf := make([]byte, 4096) // make a buffer to keep chunks that are read
-	ctype, err := getContentType(filepath, buf)
+	file, err := os.Open(filepath)
+	if err != nil {
+		return fmt.Errorf("os.Open(filepath) error: %w", err)
+	}
+	defer file.Close()
+
+	fmt.Println(file.Name())
+	ctype, err := getContentType(file)
 	if err != nil {
 		return fmt.Errorf("Get Content-Type error: %w", err)
 	}
@@ -261,10 +264,15 @@ func sendFileToClient(w http.ResponseWriter, filepath string) error {
 	w.Header().Set("Content-Length", strconv.FormatInt(fileinfo.Size(), 10))
 	w.WriteHeader(http.StatusOK)
 
-	err = readFileAndWriteToW(w, filepath, buf)
+	bufferedReader := bufio.NewReader(file)
+
+	n, err := io.Copy(w, bufferedReader)
 	if err != nil {
-		return fmt.Errorf("Read File And Write To W Error: %w", err)
+		fmt.Println(err.Error()) // FIXME
+		return fmt.Errorf("io.Copy Error: %w", err)
 	}
+
+	fmt.Printf("n: %d, fileinfo.Size: %d\n", n, fileinfo.Size()) // FIXME
 
 	return nil
 }
@@ -302,33 +310,6 @@ func sendDirFileListToClient(w http.ResponseWriter, dirpath string) error {
 	err = t.Execute(w, dirfileList)
 	if err != nil {
 		return fmt.Errorf("%w %s", ErrExecuteTemplate, err)
-	}
-
-	return nil
-}
-
-func readFileAndWriteToW(w io.Writer, path string, buf []byte) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	for {
-		// read a chunk
-		n, err := file.Read(buf)
-		if err != nil && err != io.EOF {
-			return err
-		}
-
-		if n == 0 {
-			break
-		}
-
-		// write a chunk
-		if _, err := w.Write(buf[:n]); err != nil {
-			return err
-		}
 	}
 
 	return nil

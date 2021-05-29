@@ -1,0 +1,18 @@
+[Unit]
+Description=gouploadserver
+
+[Service]
+Group=www-data
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/opt/server-applications/golang/gotls.app
+ExecStart=/opt/server-applications/golang/gotls.app/bin/gouploadserver --port 8081
+Restart=always
+PermissionsStartOnly=true
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=gouploadserver
+
+[Install]
+WantedBy=multi-user.target

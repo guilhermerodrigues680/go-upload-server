@@ -1,0 +1,18 @@
+[]byte:
+4718	    231782 ns/op	  119263 B/op	      48 allocs/op
+6974	    162304 ns/op	  159030 B/op	      48 allocs/op
+7513	    146517 ns/op	  148094 B/op	      48 allocs/op
+
+bufio:
+5112	    200566 ns/op	  118883 B/op	      53 allocs/op
+9103	    150939 ns/op	  131684 B/op	      53 allocs/op
+6789	    156318 ns/op	  171488 B/op	      53 allocs/op
+
+9158	    199089 ns/op	  126752 B/op	      50 allocs/op
+5599	    183754 ns/op	  105605 B/op	      50 allocs/op
+7826	    143610 ns/op	  146507 B/op	      50 allocs/op
+
+io.Copy
+7753	    152488 ns/op	  143690 B/op	      49 allocs/op
+8156	    206870 ns/op	  136916 B/op	      49 allocs/op
+4374	    237685 ns/op	  128097 B/op	      49 allocs/op

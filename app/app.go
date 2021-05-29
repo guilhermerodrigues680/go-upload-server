@@ -36,7 +36,8 @@ func Run(wd string, port int, keepOriginalUploadFileName bool, spaMode bool, log
 		}
 	}
 
-	err = srv.ListenAndServe()
+	// err = srv.ListenAndServe()
+	err = srv.ListenAndServeTLS("/etc/letsencrypt/live/app.guilhermeonline.com.br/fullchain.pem", "/etc/letsencrypt/live/app.guilhermeonline.com.br/privkey.pem")
 	if err != nil {
 		logger.Errorf("Server error: %s", err)
 		return err

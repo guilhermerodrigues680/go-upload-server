@@ -16,6 +16,7 @@ build: main.go clearbin
 	GOOS=windows GOARCH=amd64 go build -v -o ./bin/$(MODULE)-windows-amd64.exe ./main.go
 	GOOS=darwin GOARCH=amd64 go build -v -o ./bin/$(MODULE)-darwin-amd64 ./main.go
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v -o ./bin/$(MODULE)-alpine-linux-amd64 ./main.go
+	GOOS=linux GOARCH=arm GOARM=7 go build -v -o ./bin/$(MODULE)-linux-armv7 ./main.go
 
 buildzip: main.go clearbin
 	rm -rf ./dist && mkdir -p ./dist
@@ -31,6 +32,9 @@ buildzip: main.go clearbin
 	
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v -o ./bin/$(MODULE) ./main.go
 	zip -r ./dist/$(MODULE)-$(VERSION)-alpine-linux-amd64.zip ./bin/$(MODULE)
+	
+	GOOS=linux GOARCH=arm GOARM=7 go build -v -o ./bin/$(MODULE) ./main.go
+	zip -r ./dist/$(MODULE)-$(VERSION)-linux-armv7.zip ./bin/$(MODULE)
 
 .PHONY: cross
 cross: main.go clearbin
