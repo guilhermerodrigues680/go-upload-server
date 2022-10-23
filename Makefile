@@ -12,11 +12,11 @@ clearbin:
 	rm -rf ./bin
 
 build: main.go clearbin
-	GOOS=linux GOARCH=amd64 go build -v -o ./bin/$(MODULE)-linux-amd64 ./main.go
+	GOOS=linux GOARCH=amd64 go build -v -ldflags="-s -w" -o ./bin/$(MODULE)-linux-amd64 ./main.go
 	GOOS=linux GOARCH=arm64 go build -v -ldflags="-s -w" -o ./bin/$(MODULE)-linux-arm64 ./main.go
-	GOOS=windows GOARCH=amd64 go build -v -o ./bin/$(MODULE)-windows-amd64.exe ./main.go
-	GOOS=darwin GOARCH=amd64 go build -v -o ./bin/$(MODULE)-darwin-amd64 ./main.go
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v -o ./bin/$(MODULE)-alpine-linux-amd64 ./main.go
+	GOOS=windows GOARCH=amd64 go build -v -ldflags="-s -w" -o ./bin/$(MODULE)-windows-amd64.exe ./main.go
+	GOOS=darwin GOARCH=amd64 go build -v -ldflags="-s -w" -o ./bin/$(MODULE)-darwin-amd64 ./main.go
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -v -ldflags="-s -w" -o ./bin/$(MODULE)-alpine-linux-amd64 ./main.go
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -v -ldflags="-s -w" -o ./bin/$(MODULE)-alpine-linux-arm64 ./main.go
 
 buildzip: main.go build
