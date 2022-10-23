@@ -1,20 +1,24 @@
 package handler
 
 import (
+	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
@@ -26,9 +30,21 @@ type Server struct {
 	staticDirPath              string
 	keepOriginalUploadFileName bool
 	spaMode                    bool
+	browserFs                  fs.FS
 }
 
+var (
+	// inclui no binário os arquivos estático da pasta browser.
+	//go:embed browser/*
+	embeddedBrowser embed.FS
+)
+
 func NewServer(staticDirPath string, keepOriginalUploadFileName bool, spaMode bool, logger *logrus.Entry) *Server {
+	browserFs, err := fs.Sub(embeddedBrowser, "browser")
+	if err != nil {
+		panic(fmt.Errorf("%w %s", ErrUnexpected, err))
+	}
+
 	router := httprouter.New()
 	s := Server{
 		r:                          router,
@@ -36,6 +52,7 @@ func NewServer(staticDirPath string, keepOriginalUploadFileName bool, spaMode bo
 		staticDirPath:              staticDirPath,
 		keepOriginalUploadFileName: keepOriginalUploadFileName,
 		spaMode:                    spaMode,
+		browserFs:                  browserFs,
 	}
 
 	if s.spaMode {
@@ -58,6 +75,19 @@ func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request, p httproute
 	filePath := path.Join(s.staticDirPath, ".", fileUrlPath)
 	s.logger.Trace(filePath)
 
+	// Trata as requisições que iniciam com browser
+	if fileUrlPath == "/@browser" {
+		http.Redirect(w, r, "/@browser/", http.StatusFound)
+		return
+	}
+	if strings.HasPrefix(fileUrlPath, "/@browser/") {
+		// TODO: https://clavinjune.dev/en/blogs/golang-http-handler-with-gzip/
+		// if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {}
+		fileServer := http.StripPrefix("/@browser/", http.FileServer(http.FS(s.browserFs)))
+		fileServer.ServeHTTP(w, r)
+		return
+	}
+
 	fileinfo, err := os.Stat(filePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -76,7 +106,7 @@ func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request, p httproute
 			return
 		}
 
-		err := sendDirFileListToClient(w, filePath)
+		err := sendDirFileListToClient(w, r, filePath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -269,7 +299,7 @@ func sendFileToClient(w http.ResponseWriter, filepath string) error {
 	return nil
 }
 
-func sendDirFileListToClient(w http.ResponseWriter, dirpath string) error {
+func sendDirFileListToClient(w http.ResponseWriter, r *http.Request, dirpath string) error {
 	fileinfo, err := os.Stat(dirpath)
 	if err != nil {
 		return err
@@ -289,21 +319,60 @@ func sendDirFileListToClient(w http.ResponseWriter, dirpath string) error {
 		return strings.ToLower(dirfileList[i].Name()) < strings.ToLower(dirfileList[j].Name())
 	})
 
-	t, err := template.New("files").Funcs(template.FuncMap{
-		"formatBytes": formatBytes,
-	}).Parse(TemplateListFiles)
-	if err != nil {
-		return fmt.Errorf("%w %s", ErrCreateTemplate, err)
+	// negociação de conteúdo simples (content negotiation)
+	acceptHeader := r.Header.Get("Accept")
+	contJsonIdx := strings.Index(acceptHeader, "application/json")
+	contHtmlIdx := strings.Index(acceptHeader, "text/html")
+
+	// Não envia browser se exisitir Accept json e ele vier primeiro
+	sendJson := contJsonIdx > -1 && contJsonIdx > contHtmlIdx
+	if sendJson {
+		type FileItem struct {
+			Name    string      `json:"name"`
+			Size    int64       `json:"size"`
+			Mode    fs.FileMode `json:"mode"` // numeric (octal) format, https://chmod-calculator.com/
+			ModTime time.Time   `json:"modTime"`
+			IsDir   bool        `json:"isDir"`
+		}
+
+		dirfileListLen := len(dirfileList)
+		res := make([]*FileItem, dirfileListLen)
+		for i := 0; i < dirfileListLen; i++ {
+			idxDirFile := dirfileList[i]
+			res[i] = &FileItem{
+				Name:    idxDirFile.Name(),
+				Size:    idxDirFile.Size(),
+				Mode:    idxDirFile.Mode(),
+				ModTime: idxDirFile.ModTime(),
+				IsDir:   idxDirFile.IsDir(),
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		err := json.NewEncoder(w).Encode(&res)
+		if err != nil {
+			return fmt.Errorf("%w %s", ErrConnClosed, err)
+		}
+
+		return nil
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	err = t.Execute(w, dirfileList)
+	// Caso contrário envia redirecionamento para o browser
+	// uso o ParseRequestURI, pois trata a url de forma diferente do Parse
+	browserUrl, err := url.ParseRequestURI("/@browser/")
 	if err != nil {
-		return fmt.Errorf("%w %s", ErrExecuteTemplate, err)
+		return fmt.Errorf("%w %s", ErrUnexpected, err)
 	}
 
+	// TODO: Acho que isso não ocorre, pois essa requisição é capturada
+	if r.URL.Path != "/@browser/" {
+		q := browserUrl.Query()
+		q.Set("dir", r.URL.Path)
+		browserUrl.RawQuery = q.Encode()
+	}
+
+	http.Redirect(w, r, browserUrl.String(), http.StatusFound)
 	return nil
 }
 

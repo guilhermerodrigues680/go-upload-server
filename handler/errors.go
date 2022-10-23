@@ -5,6 +5,6 @@ import "errors"
 var (
 	ErrFileIsNotRegular = errors.New("File is not regular")
 	ErrFileIsNotDir     = errors.New("File is not dir")
-	ErrCreateTemplate   = errors.New("Create template error")
-	ErrExecuteTemplate  = errors.New("Execute template error")
+	ErrConnClosed       = errors.New("Connection Closed")
+	ErrUnexpected       = errors.New("Erro inesperado")
 )
