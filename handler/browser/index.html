@@ -1,85 +1,93 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script defer src="vendor/axios.min.js"></script>
-    <script defer src="vendor/alpinejs.min.js"></script>
     <script defer src="index.js"></script>
-    <link rel="stylesheet" href="index.css">
+    <script defer src="vendor/alpinejs.min.js"></script>
+    <link rel="stylesheet" href="index.css" />
     <title>GO Upload Server</title>
-</head>
-<body>
+  </head>
+  <body>
     <header>
-        <div class="wrapper">
-          <div class="header-container">
-            <h1>GO Upload Server</h1>
+      <div class="wrapper">
+        <div class="header-container">
+          <h1>GO Upload Server</h1>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="wrapper">
+        <!-- TODO: Alpine.js e Drag Drop -->
+        <section>
+          <form id="file-form">
+            <label class="input-file-container">
+              <p>Enviar um arquivo:</p>
+              <input id="file-input" type="file" name="file" />
+            </label>
+            <div class="file-submit-container">
+              <input id="file-form-submit" type="submit" value="Enviar" />
+            </div>
+          </form>
+          <div class="upload-progress">
+            <span class="fixed-message">Upload progress:</span>
+            <span class="variable-message" id="upload-progress">0%</span>
           </div>
-        </div>
-      </header>
-    
-      <main>
-        <div class="wrapper">
-          <section>
-            <form id="file-form">
-              <label class="input-file-container">
-                <p>Enviar um arquivo:</p>
-                <input id="file-input" type="file" name="file">
-              </label>
-              <div class="file-submit-container">
-                <input id="file-form-submit" type="submit" value="Enviar">
-              </div>
-            </form>
-            <div class="upload-progress">
-              <span class="fixed-message">Upload progress:</span>
-              <span class="variable-message" id="upload-progress">0%</span>
-            </div>
-          </section>
+        </section>
+
+        <section x-data="fileListDataFunc">
+          <div x-text="curDir"></div>
+          <div class="file-list-row file-list-row--header">
+            <span class="file-list-column">Arquivo</span>
+            <span class="file-list-column">Tamanho</span>
+            <span class="file-list-column">Mode</span>
+            <span class="file-list-column">Última modificação</span>
+          </div>
+
+          <!-- TODO Loading -->
+          <div x-show="loading">Carregando...</div>
+
+          <!-- TODO -->
           
-          <section>
-            <div class="file-list-row file-list-row--header">
-              <span class="file-list-column">file</span>
-              <span class="file-list-column">size</span>
+            <div class="file-list-row file-list-row--item" @click="handleClickBack()">
+              <span class="file-list-icon file-list-icon--dir"></span>
+              <span class="file-list-column">../</span>
+              <span class="file-list-column"></span>
             </div>
-            <a href="../">
-              <div class="file-list-row file-list-row--item">
-                <span class="file-list-icon file-list-icon--dir"></span>
-                <span class="file-list-column">../</span>
-                <span class="file-list-column"></span>
+          
+
+          <template x-for="f in fileList">
+
+              <div class="file-list-row file-list-row--item" @click="handleClickFile(f)">
+                <span
+                  class="file-list-icon"
+                  :class="f.isDir ? 'file-list-icon--dir' : 'file-list-icon--file'"
+                ></span>
+                <span class="file-list-column" x-text="f.name"></span>
+                <span
+                  class="file-list-column"
+                  x-text="f.size != null && formatBytes(f.size)"
+                ></span>
+                <span
+                  class="file-list-column"
+                  x-text="f.mode != null && formatChmod(f.mode)"
+                ></span>
+                <span
+                  class="file-list-column"
+                  x-text="f.modTime != null && formatDate(f.modTime)"
+                ></span>
               </div>
-            </a>
-            {{ range . }}
-            {{if .IsDir}}
-            <a href="{{ .Name }}/">
-              <div class="file-list-row file-list-row--item">
-                <span class="file-list-icon file-list-icon--dir"></span>
-                <span class="file-list-column">{{ .Name }}/</span>
-            {{ else }}
-            <a href="{{ .Name }}">
-              <div class="file-list-row file-list-row--item">
-                <span class="file-list-icon file-list-icon--file"></span>
-                <span class="file-list-column">{{ .Name }}</span>
-            {{ end }}
-                <span class="file-list-column">{{ formatBytes .Size }}</span>
-              </div>
-            </a>
-            {{ end }} 
-            <!-- <a href="#">
-              <div class="file-list-row file-list-row--item">
-                <span class="file-list-icon file-list-icon--file"></span>
-                <span class="file-list-column">template.go</span>
-                <span class="file-list-column">16.8 KiB</span>
-              </div>
-            </a> -->
-          </section>
-        </div>
-      </main>
-    
-      <footer>
-        <div class="footer-container">
-          golanguploadserver
-        </div>
-      </footer>
-</body>
+            
+          </template>
+        </section>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-container">golanguploadserver</div>
+    </footer>
+  </body>
 </html>
