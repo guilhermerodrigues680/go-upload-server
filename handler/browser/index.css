@@ -52,7 +52,7 @@ a {
   justify-content: center;
 }
 
-#file-form {
+.file-form {
   display: flex;
   min-height: 40px;
   margin: 10px 0;
@@ -79,11 +79,22 @@ a {
   align-items: center;
 }
 
+.input-file-container input[type="file"] {
+  display: none;
+}
+
+.input-file-container > span:first-of-type {
+  padding: 2px 4px;
+  
+  border: 1px solid cornflowerblue;
+  border-radius: 4px;
+}
+
 .file-submit-container {
   flex: 1;
 }
 
-.file-submit-container input[type="submit"] {
+.file-submit-container button[type="submit"] {
   background-color: #4caf50;
   color: white;
   border-radius: 4px;
@@ -95,11 +106,11 @@ a {
   -webkit-appearance: none;
 }
 
-.file-submit-container input[type="submit"]:hover {
+.file-submit-container button[type="submit"]:hover {
   background-color: #45a049;
 }
 
-.file-submit-container input[type="submit"]:active {
+.file-submit-container button[type="submit"]:active {
   background-color: #3a8a3e;
 }
 

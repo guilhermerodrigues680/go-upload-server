@@ -21,20 +21,43 @@
 
     <main>
       <div class="wrapper">
-        <!-- TODO: Alpine.js e Drag Drop -->
-        <section>
-          <form id="file-form">
-            <label class="input-file-container">
+        <section x-data="fileFormData">
+          <form
+            class="file-form"
+            x-ref="form"
+            @submit.prevent="handleFormSubmit"
+          >
+            <!-- TODO: isDragover -->
+            <label
+              class="input-file-container"
+              @drag.prevent=""
+              @dragstart.prevent=""
+              @dragover.prevent="isDragover = true"
+              @dragenter.prevent="isDragover = true"
+              @dragend.prevent="isDragover = false"
+              @dragleave.prevent="isDragover = false"
+              @drop.prevent="isDragover = false, handleDropFiles($event)"
+            >
               <p>Enviar um arquivo:</p>
-              <input id="file-input" type="file" name="file" />
+              <span>Escolher Arquivos</span>
+              <input type="file" multiple @change="handleFileInputChange" />
             </label>
+            
+            <template x-for="f in selectedFiles">
+              <div>
+                <span x-text="f.name"></span>
+              </div>
+            </template>
+
             <div class="file-submit-container">
-              <input id="file-form-submit" type="submit" value="Enviar" />
+              <button type="submit">Enviar</button>
             </div>
           </form>
-          <div class="upload-progress">
+          
+          <div class="upload-progress" x-show="uploading">
             <span class="fixed-message">Upload progress:</span>
-            <span class="variable-message" id="upload-progress">0%</span>
+            <span class="variable-message" x-text="uploadProgress"></span>
+            <span class="variable-message" x-text="uploadProgressText"></span>
           </div>
         </section>
 
@@ -50,7 +73,7 @@
           <!-- TODO Loading -->
           <div x-show="loading">Carregando...</div>
 
-          <!-- TODO -->
+          <!-- TODO: desativar up -->
           
             <div class="file-list-row file-list-row--item" @click="handleClickBack()">
               <span class="file-list-icon file-list-icon--dir"></span>

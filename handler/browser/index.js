@@ -5,54 +5,6 @@ const api = axios.create({
   },
 });
 
-const fileForm = document.querySelector("#file-form");
-fileForm.addEventListener("submit", (evt) => {
-  evt.preventDefault();
-  const formData = new FormData();
-  const fileInput = document.querySelector("#file-input");
-  formData.append("file", fileInput.files[0]);
-  sendRequestUpload(formData);
-});
-
-function updateUploadProgress(text) {
-  const uploadProgressDOM = document.querySelector("#upload-progress");
-  uploadProgressDOM.innerText = text;
-}
-
-function sendRequestUpload(formData) {
-  axios
-    .post("./", formData, {
-      onUploadProgress: (event) => {
-        const progress = Math.round((event.loaded * 100) / event.total);
-        const text =
-          progress +
-          "% (" +
-          formatBytes(event.loaded) +
-          " de " +
-          formatBytes(event.total) +
-          ")";
-        updateUploadProgress(text);
-      },
-    })
-    .then((response) => {
-      console.info("O arquivo já foi enviada para o servidor");
-      updateUploadProgress(
-        "O arquivo já foi enviada para o servidor. Atualizando arquivos..."
-      );
-      fileForm.reset();
-      setTimeout(() => location.reload(), 2000); // Reload the current page
-    })
-    .catch((err) => {
-      console.error(
-        "Houve um problema ao realizar o upload do arquivo no servidor",
-        err
-      );
-      updateUploadProgress(
-        "Houve um problema ao realizar o upload do arquivo no servidor"
-      );
-    });
-}
-
 function formatBytes(bytes, decimals = 2) {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
@@ -82,6 +34,135 @@ function formatDate(date) {
   }
   return "?";
 }
+
+const fileFormData = () => ({
+  uploading: false,
+  uploadProgress: {
+    loaded: 0,
+    total: null,
+    progress: 0,
+    rate: null,
+  },
+  selectedFiles: [],
+  isDragover: false,
+
+  get uploadProgressText() {
+    return `${(this.uploadProgress.progress * 100).toLocaleString()} %`;
+  },
+
+  /** @param {FileList} fileList */
+  handleFileList(fileList) {
+    // console.debug("fileList", fileList);
+
+    if (!fileList || fileList.length == 0) {
+      // TODO: Alert aqui
+      console.warn("!fileList");
+      return;
+    }
+
+    /** @type {Array<File>}  */
+    const fileArr = [];
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      //   const file = files.item(i);
+      // if (file.type !== "application/pdf") {
+      //   // TODO: Alert aqui
+      //   console.warn("!arquivo não pdf", file, file.type);
+      //   continue;
+      // }
+
+      fileArr.push(file);
+    }
+
+    // Não permite arquivos duplicados
+    const newSelectedFiles = fileArr.concat(this.selectedFiles);
+    const newUniqueSelectedFiles = [];
+    for (let i = 0; i < newSelectedFiles.length; i++) {
+      const file = newSelectedFiles[i];
+      const fileIdx = newSelectedFiles.findIndex(
+        (sf) => sf.name === file.name && sf.size === file.size
+      );
+      const fileExists = fileIdx !== i;
+      if (fileExists) {
+        // TODO: Alert aqui
+        console.warn("!arquivo já carregado ignorado", file, file.name);
+        continue;
+      }
+
+      newUniqueSelectedFiles.push(file);
+    }
+
+    this.selectedFiles = newUniqueSelectedFiles;
+  },
+
+  /** @param {DragEvent} event */
+  handleDropFiles(event) {
+    const { files } = event.dataTransfer;
+    this.handleFileList(files);
+  },
+
+  handleFileInputChange(e) {
+    /** @type {{ target: HTMLInputElement }} */
+    const { target: fileInput } = e;
+    const { files } = fileInput;
+    this.handleFileList(files);
+
+    // Limpa o fileInput para que o onchage seja chamado quando selecionar o mesmo arquivo
+    // https://stackoverflow.com/questions/1703228/how-can-i-clear-an-html-file-input-with-javascript
+    fileInput.value = "";
+  },
+
+  handleFormSubmit() {
+    if (!this.selectedFiles.length) {
+      return;
+    }
+
+    const formData = new FormData();
+    for (const f of this.selectedFiles) {
+      formData.append("file", f);
+    }
+    this.sendRequestUpload(formData);
+  },
+
+  async sendRequestUpload(formData) {
+    const onUploadProgress = (e) => {
+      this.uploadProgress.loaded = e.loaded;
+      this.uploadProgress.progress = e.progress;
+      this.uploadProgress.rate = e.rate;
+      this.uploadProgress.total = e.total;
+    };
+
+    const headers = {
+      "Content-Type": "multipart/form-data",
+    };
+
+    try {
+      this.uploading = true;
+      const serverRes = await axios.post(this.$store.dir.path, formData, {
+        headers,
+        onUploadProgress,
+      });
+      console.debug(serverRes);
+      console.info("O arquivo já foi enviada para o servidor");
+      // TODO:
+      // updateUploadProgress(
+      //   "O arquivo já foi enviada para o servidor. Atualizando arquivos..."
+      // );
+      // fileForm.reset();
+    } catch (error) {
+      console.error(
+        "Houve um problema ao realizar o upload do arquivo no servidor",
+        err
+      );
+      // TODO:
+      // updateUploadProgress(
+      //   "Houve um problema ao realizar o upload do arquivo no servidor"
+      // );
+    } finally {
+      this.uploading = false;
+    }
+  },
+});
 
 function fileListDataFunc() {
   return {
