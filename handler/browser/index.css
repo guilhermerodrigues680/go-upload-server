@@ -1,4 +1,5 @@
 /* TODO: alteração mobile first e @import css desktop */
+/* TODO: dark mode */
 
 *,
 *:before,
@@ -85,7 +86,7 @@ a {
 
 .input-file-container > span:first-of-type {
   padding: 2px 4px;
-  
+
   border: 1px solid cornflowerblue;
   border-radius: 4px;
 }
@@ -129,46 +130,70 @@ a {
   font-weight: 300;
 }
 
-.file-list-row {
+.file-section-container {
   display: flex;
+  flex-direction: column;
+  row-gap: 4px;
+  
   padding: 0 10px;
-  color: #303030;
-  font-size: 1rem;
+}
+
+.file-list-row {
+  display: grid;
+  grid-template-columns: 6fr 2fr 4fr 2fr;
+  justify-items: center;
+  align-items: center;
+
+  font-size: 0.85rem;
   font-weight: 300;
-  transition: 0.3s;
+
+  color: #303030;
+  transition: 0.3s padding-left, 0.3s background-color;
   border-radius: 5px;
 }
 
 .file-list-row--header {
-  background-color: black;
+  background-color: #262626;
   color: white;
-  margin: 10px 0;
-  text-transform: capitalize;
+  padding: 6px;
+  
+  font-size: 0.85rem;
   font-weight: bold;
+  text-transform: capitalize;
 }
 
-.file-list-row--item {
-  margin: 8px 0;
+.file-list-row--item > :nth-child(1) {
+  font-size: 1rem;
+  justify-self: start;
 }
 
-.file-list-row--item:hover {
+.file-list-row--item:hover:not(.file-list-row--disabled) {
   cursor: pointer;
   background-color: rgba(255, 255, 255, 0.8);
-  color: black;
-  padding-left: 15px;
+  color: #262626;
+  padding-left: 8px;
 }
 
-.file-list-row--item:active {
+.file-list-row--item:active:not(.file-list-row--disabled) {
   background-color: rgba(173, 208, 255, 0.8);
-  transition: 0.1s;
+  transition: 0.1s background-color;
+}
+
+.file-list-row--disabled {
+  opacity: 0.25;
+  filter: saturate(0);
+  pointer-events: none;
 }
 
 .file-list-column {
-  flex: 50%;
+  display: flex;
+  align-items: center;
 }
 
 .file-list-icon {
-  flex: 0 0 16px;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
   background-repeat: no-repeat;
   background-position: center;
   margin-right: 4px;

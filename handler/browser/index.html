@@ -61,26 +61,27 @@
           </div>
         </section>
 
-        <section x-data="fileListDataFunc">
+        <section class="file-section-container" x-data="fileListDataFunc">
           <div x-text="$store.dir.path"></div>
           <div class="file-list-row file-list-row--header">
             <span class="file-list-column">Arquivo</span>
             <span class="file-list-column">Tamanho</span>
-            <span class="file-list-column">Mode(<abbr title="IsDir,Owner,Group,Public">OGP</abbr>)</span>
             <span class="file-list-column">Última modificação</span>
+            <span class="file-list-column">Mode(<abbr title="IsDir,Owner,Group,Public">OGP</abbr>)</span>
           </div>
 
           <!-- TODO Loading -->
           <div x-show="loading">Carregando...</div>
 
-          <!-- TODO: desativar up -->
           <div
             class="file-list-row file-list-row--item"
+            :class="$store.dir.canBack || 'file-list-row--disabled'"
             @click="handleClickBack()"
           >
-            <span class="file-list-icon file-list-icon--dir"></span>
-            <span class="file-list-column">../</span>
-            <span class="file-list-column"></span>
+            <span class="file-list-column">
+              <span class="file-list-icon file-list-icon--dir"></span>
+              <span>..</span>
+            </span>
           </div>
 
           <template x-for="f in $store.dir.fileList">
@@ -88,22 +89,24 @@
               class="file-list-row file-list-row--item"
               @click="handleClickFile(f)"
             >
-              <span
+              <span class="file-list-column">
+                <span
                 class="file-list-icon"
                 :class="f.isDir ? 'file-list-icon--dir' : 'file-list-icon--file'"
-              ></span>
-              <span class="file-list-column" x-text="f.name"></span>
+                ></span>
+                <span x-text="f.name"></span>
+              </span>
               <span
                 class="file-list-column"
                 x-fbytes:kib.4="f.size"
               ></span>
               <span
                 class="file-list-column"
-                x-text="formatChmod(f.mode)"
+                x-text="formatDate(f.modTime)"
               ></span>
               <span
                 class="file-list-column"
-                x-text="formatDate(f.modTime)"
+                x-text="formatChmod(f.mode)"
               ></span>
             </div>
           </template>
