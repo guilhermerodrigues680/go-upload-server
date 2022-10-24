@@ -49,8 +49,8 @@ function formatChmod(mode) {
     const x = (n & xBit) !== 0 ? "x" : "-";
     return `${r}${w}${x}`;
   };
-  
-  const dir = mode & fileModeDir !== 0 ? "d" : "-";
+
+  const dir = mode & (fileModeDir !== 0) ? "d" : "-";
   const ogpText = {
     owner: chmodText((mode >> 6) & 0b111),
     group: chmodText((mode >> 3) & 0b111),
@@ -233,14 +233,14 @@ function fileListDataFunc() {
             weekday: "short",
             hour: "2-digit",
             minute: "2-digit",
-            second: "2-digit"
+            second: "2-digit",
           });
         }
       } catch (error) {
         console.error("date parse error:", error);
       }
       return "?";
-    }
+    },
   };
 }
 
@@ -257,6 +257,10 @@ document.addEventListener("alpine:init", () => {
     get canBack() {
       return this.pathParts.length >= 3;
     },
+
+    // get directoryBackward() {
+    //   return this.oneDirectoryBackward();
+    // },
 
     init() {
       this.curDir = this.getCurDir();
@@ -283,8 +287,9 @@ document.addEventListener("alpine:init", () => {
         return null;
       }
 
-      this.pathParts.splice(this.pathParts.length - 2, 1);
-      return this.pathPartsToString(this.pathParts);
+      const newPp = [...this.pathParts];
+      newPp.splice(this.pathParts.length - 2, 1);
+      return this.pathPartsToString(newPp);
     },
 
     async loadRelativeDir(dir) {
@@ -294,7 +299,7 @@ document.addEventListener("alpine:init", () => {
         ...dirPp,
         this.pathParts[this.pathParts.length - 1],
       ];
-      this._loadDirPathPart(newPathParts);
+      return this._loadDirPathPart(newPathParts);
     },
 
     openFile(name) {
@@ -308,7 +313,7 @@ document.addEventListener("alpine:init", () => {
       if (!dir || !dir.startsWith("/") || !dir.endsWith("/")) {
         throw new Error(`InvalidArgumentException dir: ${dir}`);
       }
-      this._loadDirPathPart(this.pathToPathParts(dir));
+      return this._loadDirPathPart(this.pathToPathParts(dir));
     },
 
     async _loadDirPathPart(pp) {
