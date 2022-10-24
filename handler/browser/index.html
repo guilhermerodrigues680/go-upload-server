@@ -39,7 +39,7 @@
         </section>
 
         <section x-data="fileListDataFunc">
-          <div x-text="curDir"></div>
+          <div x-text="$store.dir.path"></div>
           <div class="file-list-row file-list-row--header">
             <span class="file-list-column">Arquivo</span>
             <span class="file-list-column">Tamanho</span>
@@ -59,7 +59,7 @@
             </div>
           
 
-          <template x-for="f in fileList">
+          <template x-for="f in $store.dir.fileList">
 
               <div class="file-list-row file-list-row--item" @click="handleClickFile(f)">
                 <span

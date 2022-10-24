@@ -1,3 +1,10 @@
+const api = axios.create({
+  baseURL: "/",
+  headers: {
+    Accept: "application/json",
+  },
+});
+
 const fileForm = document.querySelector("#file-form");
 fileForm.addEventListener("submit", (evt) => {
   evt.preventDefault();
@@ -78,53 +85,117 @@ function formatDate(date) {
 
 function fileListDataFunc() {
   return {
+    loading: false,
+
+    async handleClickBack() {
+      const storeDir = Alpine.store("dir");
+      if (!storeDir.canBack) {
+        return;
+      }
+
+      try {
+        this.loading = true;
+        await storeDir.loadDir(storeDir.oneDirectoryBackward());
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async handleClickFile(file) {
+      const storeDir = Alpine.store("dir");
+      const { name, isDir } = file;
+      if (isDir) {
+        try {
+          this.loading = true;
+          await storeDir.loadRelativeDir(name);
+        } finally {
+          this.loading = false;
+        }
+        return;
+      }
+
+      storeDir.openFile(name);
+    },
+  };
+}
+
+document.addEventListener("alpine:init", () => {
+  Alpine.store("dir", {
+    pathParts: [],
     fileList: null,
     loading: false,
-    curDir: null,
+
+    get path() {
+      return this.pathPartsToString(this.pathParts);
+    },
+
+    get canBack() {
+      return this.pathParts.length >= 3;
+    },
 
     init() {
-        this.curDir = this.getCurDir();
-      this.loadDir(this.curDir);
+      this.curDir = this.getCurDir();
+      this._loadDirPathPart(this.curDir);
+    },
+
+    pathPartsToString(pp) {
+      return pp.join("/");
+    },
+
+    pathToPathParts(p) {
+      const paths = p.split("/");
+      return paths;
     },
 
     getCurDir() {
       const curUrl = new URL(window.location.toString());
       const dir = curUrl.searchParams.get("dir");
-      return dir || "/";
+      return dir ? this.pathToPathParts(dir) : this.pathToPathParts("/");
     },
 
-    async handleClickBack() {
-        console.debug("click back")
-        const paths = this.curDir.slice(0, this.curDir.length-1).split("/");
-        paths.pop();
-        newUrl = `${paths.join("/")}/`;
-        await this.loadDir(newUrl);
-        // TODO: usar um watch para curDir? ou centralizar mudanças?
-        this.curDir = newUrl;
-    },
-
-    async handleClickFile(file) {
-        const { name, isDir } = file;
-        console.debug("file", file,name, isDir);
-        // TODO: usar pushState?
-        // https://stackoverflow.com/questions/824349/how-do-i-modify-the-url-without-reloading-the-page
-      if (isDir) {
-        const newUrl = `${this.curDir}${name}/`;
-        await this.loadDir(newUrl);
-        this.curDir = newUrl;
-      } else {
-        const destUrl = new URL(`${this.curDir}${name}`, window.location.toString());
-        window.location.href = destUrl.href;
+    oneDirectoryBackward() {
+      if (!this.canBack) {
+        return null;
       }
+
+      this.pathParts.splice(this.pathParts.length - 2, 1);
+      return this.pathPartsToString(this.pathParts);
+    },
+
+    async loadRelativeDir(dir) {
+      const dirPp = dir.split("/");
+      const newPathParts = [
+        ...this.pathParts.slice(0, -1),
+        ...dirPp,
+        this.pathParts[this.pathParts.length - 1],
+      ];
+      this._loadDirPathPart(newPathParts);
+    },
+
+    openFile(name) {
+      const newPathParts = this.pathParts.slice(0, -1).concat(name);
+      const p = this.pathPartsToString(newPathParts);
+      const destUrl = new URL(p, window.location.toString());
+      window.location.href = destUrl.href;
     },
 
     async loadDir(dir) {
-      const headers = { Accept: "application/json" };
+      if (!dir || !dir.startsWith("/") || !dir.endsWith("/")) {
+        throw new Error(`InvalidArgumentException dir: ${dir}`);
+      }
+      this._loadDirPathPart(this.pathToPathParts(dir));
+    },
+
+    async _loadDirPathPart(pp) {
+      // TODO: usar pushState?
+      // https://stackoverflow.com/questions/824349/how-do-i-modify-the-url-without-reloading-the-page
+
       try {
         this.loading = true;
-        const apiRes = await axios.get(dir, { headers });
-        console.debug("apires", apiRes.data);
+        const dir = this.pathPartsToString(pp);
+        const apiRes = await api.get(dir);
         this.fileList = apiRes.data;
+        this.pathParts = pp;
       } catch (error) {
         console.error("error", error);
         throw error;
@@ -132,5 +203,12 @@ function fileListDataFunc() {
         this.loading = false;
       }
     },
-  };
-}
+  });
+
+  // Alpine.effect(() => {
+  //   const pathParts = Alpine.store('dir').pathParts;
+  //   const path = Alpine.store('dir').path;
+
+  //   console.debug(pathParts, path);
+  // })
+});
