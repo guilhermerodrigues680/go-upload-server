@@ -84,7 +84,7 @@
             </span>
           </div>
 
-          <template x-for="f in $store.dir.fileList">
+          <template x-for="f in $store.dir.fileList" :key="f.name">
             <div
               class="file-list-row file-list-row--item"
               @click="handleClickFile(f)"
