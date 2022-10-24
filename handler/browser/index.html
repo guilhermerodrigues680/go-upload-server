@@ -38,21 +38,33 @@
               @dragleave.prevent="isDragover = false"
               @drop.prevent="isDragover = false, handleDropFiles($event)"
             >
-              <p>Enviar um arquivo:</p>
-              <span>Escolher Arquivos</span>
+              <span>Arraste e solte arquivos aqui</span>
+              <span>ou</span>
+              <span>Selecione os arquivos</span>
               <input type="file" multiple @change="handleFileInputChange" />
             </label>
-
-            <template x-for="f in selectedFiles">
-              <div>
-                <span x-text="f.name"></span>
-              </div>
-            </template>
 
             <div class="file-submit-container">
               <button type="submit">Enviar</button>
             </div>
           </form>
+
+          <div
+            class="file-form-section__selected-files-container"
+            x-show="Boolean(selectedFiles)"
+          >
+            <template x-for="(f, index) in selectedFiles" :key="f.name+f.size">
+              <div class="file-form-section__selected-file">
+                <span x-text="f.name"></span>
+                <span x-fbytes:kib="f.size"></span>
+                <span
+                  class="file-form-section__selected-fileclickable-icon"
+                  @click="handleClickExcludeFile(index)"
+                  >&times;</span
+                >
+              </div>
+            </template>
+          </div>
 
           <div class="upload-progress" x-show="uploading">
             <span class="fixed-message">Upload progress:</span>

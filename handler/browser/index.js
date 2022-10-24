@@ -137,6 +137,10 @@ const fileFormData = () => ({
     fileInput.value = "";
   },
 
+  handleClickExcludeFile(idx) {
+    this.selectedFiles.splice(idx, 1);
+  },
+
   handleFormSubmit() {
     if (!this.selectedFiles.length) {
       return;

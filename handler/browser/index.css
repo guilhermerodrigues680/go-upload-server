@@ -55,40 +55,66 @@ a {
 
 .file-form {
   display: flex;
-  min-height: 40px;
-  margin: 10px 0;
-}
-
-.input-file-container p {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  padding: 0 10px;
+  margin: 0 0 10px 0;
 }
 
 .input-file-container {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  row-gap: 4px;
+
+  padding: 8px;
+  margin-right: 4px;
+
   background-color: white;
   border: 1px solid #ccc;
   border-radius: 4px;
-  margin-right: 4px;
   cursor: pointer;
-
-  flex: 1;
-  flex-wrap: wrap;
-
-  display: flex;
-  align-items: center;
 }
 
 .input-file-container input[type="file"] {
   display: none;
 }
 
-.input-file-container > span:first-of-type {
+.input-file-container > span:last-of-type {
   padding: 2px 4px;
 
   border: 1px solid cornflowerblue;
   border-radius: 4px;
+}
+
+.file-form-section__selected-files-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  row-gap: 4px;
+
+  margin: 0 0 10px 0;
+}
+
+.file-form-section__selected-files-container .file-form-section__selected-file {
+  padding: 4px 8px;
+
+  border: 1px solid cornflowerblue;
+  border-radius: 4px;
+}
+
+.file-form-section__selected-fileclickable-icon {
+  padding: 2px;
+  cursor: pointer;
+}
+
+.file-form-section__selected-fileclickable-icon {
+  padding: 2px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.file-form-section__selected-fileclickable-icon:hover {
+  background-color: white;
 }
 
 .file-submit-container {
@@ -220,10 +246,15 @@ a {
   background-color: #fff;
   border-radius: 4px;
   cursor: progress;
-  animation: file-section-container__loader-anim 750ms cubic-bezier(0.45, 0, 0.55, 1) infinite alternate
+  animation: file-section-container__loader-anim 750ms
+    cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 }
 
 @keyframes file-section-container__loader-anim {
-  from {opacity: 0.85;}
-  to {opacity: 0.65;}
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0.65;
+  }
 }
