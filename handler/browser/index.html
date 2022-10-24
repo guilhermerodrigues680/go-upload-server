@@ -42,7 +42,7 @@
               <span>Escolher Arquivos</span>
               <input type="file" multiple @change="handleFileInputChange" />
             </label>
-            
+
             <template x-for="f in selectedFiles">
               <div>
                 <span x-text="f.name"></span>
@@ -53,7 +53,7 @@
               <button type="submit">Enviar</button>
             </div>
           </form>
-          
+
           <div class="upload-progress" x-show="uploading">
             <span class="fixed-message">Upload progress:</span>
             <span class="variable-message" x-text="uploadProgress"></span>
@@ -66,7 +66,7 @@
           <div class="file-list-row file-list-row--header">
             <span class="file-list-column">Arquivo</span>
             <span class="file-list-column">Tamanho</span>
-            <span class="file-list-column">Mode</span>
+            <span class="file-list-column">Mode(<abbr title="IsDir,Owner,Group,Public">OGP</abbr>)</span>
             <span class="file-list-column">Última modificação</span>
           </div>
 
@@ -74,36 +74,38 @@
           <div x-show="loading">Carregando...</div>
 
           <!-- TODO: desativar up -->
-          
-            <div class="file-list-row file-list-row--item" @click="handleClickBack()">
-              <span class="file-list-icon file-list-icon--dir"></span>
-              <span class="file-list-column">../</span>
-              <span class="file-list-column"></span>
-            </div>
-          
+          <div
+            class="file-list-row file-list-row--item"
+            @click="handleClickBack()"
+          >
+            <span class="file-list-icon file-list-icon--dir"></span>
+            <span class="file-list-column">../</span>
+            <span class="file-list-column"></span>
+          </div>
 
           <template x-for="f in $store.dir.fileList">
-
-              <div class="file-list-row file-list-row--item" @click="handleClickFile(f)">
-                <span
-                  class="file-list-icon"
-                  :class="f.isDir ? 'file-list-icon--dir' : 'file-list-icon--file'"
-                ></span>
-                <span class="file-list-column" x-text="f.name"></span>
-                <span
-                  class="file-list-column"
-                  x-text="f.size != null && formatBytes(f.size)"
-                ></span>
-                <span
-                  class="file-list-column"
-                  x-text="f.mode != null && formatChmod(f.mode)"
-                ></span>
-                <span
-                  class="file-list-column"
-                  x-text="f.modTime != null && formatDate(f.modTime)"
-                ></span>
-              </div>
-            
+            <div
+              class="file-list-row file-list-row--item"
+              @click="handleClickFile(f)"
+            >
+              <span
+                class="file-list-icon"
+                :class="f.isDir ? 'file-list-icon--dir' : 'file-list-icon--file'"
+              ></span>
+              <span class="file-list-column" x-text="f.name"></span>
+              <span
+                class="file-list-column"
+                x-fbytes:kib.4="f.size"
+              ></span>
+              <span
+                class="file-list-column"
+                x-text="formatChmod(f.mode)"
+              ></span>
+              <span
+                class="file-list-column"
+                x-text="formatDate(f.modTime)"
+              ></span>
+            </div>
           </template>
         </section>
       </div>

@@ -5,13 +5,20 @@ const api = axios.create({
   },
 });
 
-function formatBytes(bytes, decimals = 2) {
+function formatBytes(bytes, decimals = 2, unit = "kB") {
   if (bytes === 0) return "0 Bytes";
-  const k = 1024;
+  const k = unit === "Kib" ? 1000 : 1024;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+  const sizes =
+    unit === "Kib"
+      ? ["Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
+      : ["Bytes", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+  const n = bytes / Math.pow(k, i);
+  const nLocalText = n.toLocaleString(undefined, {
+    maximumFractionDigits: dm,
+  });
+  return `${nLocalText} ${sizes[i]}`;
 }
 
 /**
@@ -20,19 +27,37 @@ function formatBytes(bytes, decimals = 2) {
  */
 function formatChmod(mode) {
   // https://ss64.com/bash/chmod.html
-  // chmod calculator
-  return mode.toString(8);
-}
+  // https://chmod-calculator.com/
+  // https://unix.stackexchange.com/questions/39710/how-to-get-permission-number-by-string-rw-r-r
 
-function formatDate(date) {
-  try {
-    if (date) {
-      return new Date(date).toLocaleString();
-    }
-  } catch (error) {
-    console.error("date parse error:", error);
-  }
-  return "?";
+  // TODO: mode 20000000775
+  // ex: mode = 436 (0o664)
+  // (0o664).toString(2) -> '110110100'
+  // (0o664 & 0b111).toString(2) -> '100'
+  // (0o664 >> 3 & 0b111).toString(2) -> '110'
+  // (0o664 >> 6 & 0b111).toString(2) -> '110'
+  // return mode.toString(8);
+
+  const fileModeDir = 1 << (32 - 1);
+  const rBit = 0b100;
+  const wBit = 0b010;
+  const xBit = 0b001;
+
+  const chmodText = (n) => {
+    const r = (n & rBit) !== 0 ? "r" : "-";
+    const w = (n & wBit) !== 0 ? "w" : "-";
+    const x = (n & xBit) !== 0 ? "x" : "-";
+    return `${r}${w}${x}`;
+  };
+  
+  const dir = mode & fileModeDir !== 0 ? "d" : "-";
+  const ogpText = {
+    owner: chmodText((mode >> 6) & 0b111),
+    group: chmodText((mode >> 3) & 0b111),
+    public: chmodText(mode & 0b111),
+  };
+
+  return `${dir}${ogpText.owner}${ogpText.group}${ogpText.public}`;
 }
 
 const fileFormData = () => ({
@@ -197,13 +222,32 @@ function fileListDataFunc() {
 
       storeDir.openFile(name);
     },
+
+    formatDate(date) {
+      try {
+        if (date) {
+          return new Date(date).toLocaleString(undefined, {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            weekday: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+          });
+        }
+      } catch (error) {
+        console.error("date parse error:", error);
+      }
+      return "?";
+    }
   };
 }
 
 document.addEventListener("alpine:init", () => {
   Alpine.store("dir", {
     pathParts: [],
-    fileList: null,
+    fileList: [],
     loading: false,
 
     get path() {
@@ -292,4 +336,17 @@ document.addEventListener("alpine:init", () => {
 
   //   console.debug(pathParts, path);
   // })
+
+  Alpine.directive(
+    "fbytes",
+    (el, { value, modifiers, expression }, { evaluate }) => {
+      const unit = value === "kib" ? "Kib" : undefined;
+      const dec = parseInt(modifiers?.[0]) || undefined;
+      const num = evaluate(expression);
+      // console.debug(value,modifiers, num, unit,dec);
+      const res = formatBytes(num, dec, unit);
+      // console.debug(num, dec, unit, res);
+      el.textContent = res;
+    }
+  );
 });
