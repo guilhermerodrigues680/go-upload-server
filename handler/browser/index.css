@@ -1,3 +1,5 @@
+/* TODO: alteração mobile first e @import css desktop */
+
 *,
 *:before,
 *:after {
@@ -155,9 +157,9 @@ a {
 }
 
 .file-list-icon {
+  flex: 0 0 16px;
   background-repeat: no-repeat;
   background-position: center;
-  flex: 16px;
   margin-right: 4px;
 }
 
