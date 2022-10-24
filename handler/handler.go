@@ -314,9 +314,19 @@ func sendDirFileListToClient(w http.ResponseWriter, r *http.Request, dirpath str
 		return err
 	}
 
-	// Sort by name
+	// Sort por nome e tipo, true = i tem prioridade, false = j tem prioridade
 	sort.Slice(dirfileList, func(i, j int) bool {
-		return strings.ToLower(dirfileList[i].Name()) < strings.ToLower(dirfileList[j].Name())
+		iIsDir := dirfileList[i].IsDir()
+		jIsDir := dirfileList[j].IsDir()
+
+		if iIsDir && jIsDir || !iIsDir && !jIsDir {
+			orderByName := strings.ToLower(dirfileList[i].Name()) < strings.ToLower(dirfileList[j].Name())
+			return orderByName
+		} else if dirfileList[i].IsDir() {
+			return true
+		} else {
+			return false
+		}
 	})
 
 	// negociação de conteúdo simples (content negotiation)
